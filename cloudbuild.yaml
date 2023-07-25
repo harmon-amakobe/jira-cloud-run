@@ -18,9 +18,15 @@ steps:
           --platform=managed \
           --region=$REGION \
           --allow-unauthenticated \
-          --set-secrets=_DB_USERNAME_SECRET="$(gcloud secrets versions access latest --secret=_DB_USERNAME_SECRET)" \
-          --set-secrets=_DB_PASSWORD_SECRET="$(gcloud secrets versions access latest --secret=_DB_PASSWORD_SECRET)" \
-          --set-secrets=_JDBC_URL_SECRET="$(gcloud secrets versions access latest --secret=_JDBC_URL_SECRET)"
+          --set-secrets=_DB_USERNAME_SECRET="$(_DB_USERNAME_SECRET)" \
+          --set-secrets=_DB_PASSWORD_SECRET="$(_DB_PASSWORD_SECRET)" \
+          --set-secrets=_JDBC_URL_SECRET="$(_JDBC_URL_SECRET)"
+
+# Substitution variables for secrets and other values
+substitutions:
+  _DB_USERNAME_SECRET: 'projects/$PROJECT_ID/secrets/db-username/versions/latest'
+  _DB_PASSWORD_SECRET: 'projects/$PROJECT_ID/secrets/db-password/versions/latest'
+  _JDBC_URL_SECRET: 'projects/$PROJECT_ID/secrets/jdbc-url/versions/latest'
 
 # Cloud Build timeout (optional)
 timeout: '1800s'  # Set to a value that accommodates the build and deployment time.
