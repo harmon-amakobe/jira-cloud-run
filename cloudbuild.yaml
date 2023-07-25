@@ -25,6 +25,17 @@ steps:
 # Cloud Build substitutions (optional)
 substitutions:
   _JIRA_HOME_BUCKET: 'your-jira-home-bucket'  # Replace with your GCS bucket name
+  _JIRA_SHARED_HOME: '/mnt/gcs/jira-shared'  # Set the path for the shared home directory
+  _JIRA_NODE_ID: 'your-custom-jira-node-id'
+  _EHCACHE_PEER_DISCOVERY: 'automatic'  # or 'default'
+  _EHCACHE_LISTENER_HOSTNAME: 'your-listener-hostname'
+  _EHCACHE_LISTENER_PORT: '40001'
+  _EHCACHE_OBJECT_PORT: 'dynamic'
+  _EHCACHE_LISTENER_SOCKETTIMEOUTMILLIS: '2000'
+  _EHCACHE_MULTICAST_ADDRESS: 'your-multicast-address'
+  _EHCACHE_MULTICAST_PORT: 'your-multicast-port'
+  _EHCACHE_MULTICAST_TIMETOLIVE: 'your-multicast-timetolive'
+  _EHCACHE_MULTICAST_HOSTNAME: 'your-multicast-hostname'
 
 # Cloud Build timeout (optional)
 timeout: '1800s'  # Set to a value that accommodates the build and deployment time.
