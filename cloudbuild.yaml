@@ -1,11 +1,11 @@
 steps:
   # Step 1: Build the Docker image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/jira-data-center', '.']
+    args: ['build', '-t', 'gcr.io/$_PROJECT_ID/jira-data-center', '.']
 
   # Step 2: Push the Docker image to Google Container Registry (GCR)
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/jira-data-center']
+    args: ['push', 'gcr.io/$_PROJECT_ID/jira-data-center']
 
   # Step 3: Deploy the Docker image to Cloud Run
   - name: 'gcr.io/cloud-builders/gcloud'
@@ -13,29 +13,10 @@ steps:
       - 'run'
       - 'deploy'
       - 'jira-data-center'
-      - '--image=gcr.io/$PROJECT_ID/jira-data-center'
+      - '--image=gcr.io/$_PROJECT_ID/jira-data-center'
       - '--platform=managed'
       - '--region=us-central1'  # Change to your desired region
       - '--allow-unauthenticated'  # Remove this if you want to require authentication
-
-# Optionally, you can add more steps for additional tasks after deployment,
-# such as running database migrations or other setup tasks.
-# Just make sure to include the appropriate scripts and configurations in your repository.
-
-# Cloud Build substitutions (optional)
-substitutions:
-  _JIRA_HOME_BUCKET: 'your-jira-home-bucket'  # Replace with your GCS bucket name
-  _JIRA_SHARED_HOME: '/mnt/gcs/jira-shared'  # Set the path for the shared home directory
-  _JIRA_NODE_ID: 'your-custom-jira-node-id'
-  _EHCACHE_PEER_DISCOVERY: 'automatic'  # or 'default'
-  _EHCACHE_LISTENER_HOSTNAME: 'your-listener-hostname'
-  _EHCACHE_LISTENER_PORT: '40001'
-  _EHCACHE_OBJECT_PORT: 'dynamic'
-  _EHCACHE_LISTENER_SOCKETTIMEOUTMILLIS: '2000'
-  _EHCACHE_MULTICAST_ADDRESS: 'your-multicast-address'
-  _EHCACHE_MULTICAST_PORT: 'your-multicast-port'
-  _EHCACHE_MULTICAST_TIMETOLIVE: 'your-multicast-timetolive'
-  _EHCACHE_MULTICAST_HOSTNAME: 'your-multicast-hostname'
 
 # Cloud Build timeout (optional)
 timeout: '1800s'  # Set to a value that accommodates the build and deployment time.

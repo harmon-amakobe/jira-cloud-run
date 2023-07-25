@@ -5,7 +5,7 @@ set -eo pipefail
 mkdir -p $JIRA_SHARED_HOME
 
 echo "Mounting GCS Fuse for JIRA_HOME."
-gcsfuse --debug_gcs --debug_fuse $JIRA_HOME_BUCKET $JIRA_SHARED_HOME
+gcsfuse --debug_gcs --debug_fuse $_JIRA_HOME_BUCKET $JIRA_SHARED_HOME
 echo "Mounting completed."
 
 # Set up clustering configuration properties
@@ -35,6 +35,5 @@ exec /opt/atlassian/jira/bin/start-jira.sh -fg \
     -Datlassian.cluster.ehcache.multicast.address="$EHCACHE_MULTICAST_ADDRESS" \
     -Datlassian.cluster.ehcache.multicast.port="$EHCACHE_MULTICAST_PORT" \
     -Datlassian.cluster.ehcache.multicast.timetolive="$EHCACHE_MULTICAST_TIMETOLIVE" \
-    -Datlassian.cluster.ehcache.multicast.hostname="$EHCACHE_MULTICAST_HOSTNAME" \
-    "your-jira-flags"  # Replace this with your actual Jira flags, if needed
+    -Datlassian.cluster.ehcache.multicast.hostname="$EHCACHE_MULTICAST_HOSTNAME"
     
