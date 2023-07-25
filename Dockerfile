@@ -1,24 +1,31 @@
 # Use the official Atlassian Jira Software Docker image as the base image
 FROM atlassian/jira-software
 
-# Set environment variables for connecting to Cloud SQL
-ENV DB_DRIVER=com.mysql.jdbc.Driver \
-    DB_TYPE=mysql \
-    DB_HOST=<CLOUD_SQL_INSTANCE_CONNECTION_NAME> \
-    DB_PORT=<CLOUD_SQL_DATABASE_PORT> \
-    DB_NAME=<JIRA_DATABASE_NAME> \
-    DB_USER=<DATABASE_USER> \
-    DB_PASS=<DATABASE_PASSWORD>
+# Install system dependencies
+RUN set -e; \
+    apt-get update -y && apt-get install -y \
+    tini \
+    lsb-release; \
+    gcsFuseRepo=gcsfuse-`lsb_release -c -s`; \
+    echo "deb http://packages.cloud.google.com/apt $gcsFuseRepo main" | \
+    tee /etc/apt/sources.list.d/gcsfuse.list; \
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
+    apt-key add -; \
+    apt-get update; \
+    apt-get install -y gcsfuse \
+    && apt-get clean
 
-# Set the shared home directory to a path within the container
-ENV JIRA_SHARED_HOME=/var/atlassian/application-data/jira
+# Set fallback mount directory (shared home)
+ENV JIRA_SHARED_HOME /mnt/gcs/jira-shared
 
-# Expose the port on which Jira listens (default is 8080)
-EXPOSE 8080
+# Copy the jira_entrypoint.sh script from the scripts directory into the container
+COPY scripts/jira_entrypoint.sh /app/jira_entrypoint.sh
 
-# Add any custom configurations or files to the image
-# For example, if you have custom server.xml or other Jira-specific configuration files, add them here.
-# COPY configurations/server.xml /path/to/server.xml
+# Ensure the script is executable
+RUN chmod +x /app/jira_entrypoint.sh
 
-# Start Jira using the entrypoint from the base image
-CMD ["/entrypoint.sh", "-fg"]
+# Use tini to manage zombie processes and signal forwarding
+ENTRYPOINT ["/usr/bin/tini", "--"]
+
+# Pass the startup script as arguments to Tini
+CMD ["/app/jira_entrypoint.sh"]
