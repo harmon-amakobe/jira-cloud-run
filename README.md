@@ -7,7 +7,7 @@ The image is found here: <https://hub.docker.com/r/atlassian/jira-software>
 ## Quick Procedure Summary
 
 1. Pull image from Docker
-1. Mount folder in bucket as a volume
+1. Mount folder in bucket as a volume using Cloud Storage FUSE
 1. Connect to Cloud SQL instance
 1. Build modified image using Cloud Build
 1. Test on Cloud Run
