@@ -5,7 +5,8 @@ FROM atlassian/jira-software
 RUN set -e; \
     apt-get update -y && apt-get install -y \
     tini \
-    lsb-release; \
+    lsb-release \
+    gnupg; \
     gcsFuseRepo=gcsfuse-`lsb_release -c -s`; \
     echo "deb http://packages.cloud.google.com/apt $gcsFuseRepo main" | \
     tee /etc/apt/sources.list.d/gcsfuse.list; \
