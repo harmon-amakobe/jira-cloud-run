@@ -14,7 +14,7 @@ Follow these steps to deploy Jira Data Center on GCP:
 6. Deploy the modified image to Cloud Run.
 7. Test the deployment on Cloud Run.
 
-## Repository 
+## Repository Contents
 
 ```repository
 .
@@ -37,10 +37,6 @@ In this folder tree:
 - The `configurations` directory holds various configuration files needed by your Jira Data Center instances. For example, you might have a `server.xml` file to customize the Tomcat server settings or any other Jira-specific configuration files.
 - The `LICENSE` file holds the MIT license associated with the project.
 - The `README.md` file provides the project's documentation and instructions for setup.
-
-### configurations/ (Optional)
-
-The "configurations" directory holds various configuration files needed by your Jira Data Center instances. For example, you might have a "server.xml" file to customize the Tomcat server settings or any other Jira-specific configuration files.
 
 ## Setting Up the GCP Environment
 
