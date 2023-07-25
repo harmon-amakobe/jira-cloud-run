@@ -48,20 +48,11 @@ Before you start the deployment process, you need to set up the GCP environment 
    - Enable Cloud SQL: [MySQL Quickstart](https://cloud.google.com/sql/docs/mysql/quickstart)
    - Enable Cloud Storage: [Quickstart Guide](https://cloud.google.com/storage/docs/quickstart-console)
 
-2. Create the following environment variables in the Cloud Build console:
-   - [Set up and manage environment variables](https://cloud.google.com/cloud-build/docs/securing-builds/use-encrypted-secrets-credentials#creating_and_using_user-defined_environment_variables)
+2. Create the following substitution variables in the Cloud Build console:
+   - [Set up and manage substition variables](https://cloud.google.com/build/docs/configuring-builds/substitute-variable-values)
 
    - `_JIRA_HOME_BUCKET`: Your GCS bucket name for JIRA_HOME.
-   - `_JIRA_NODE_ID`: Your custom Jira node ID (optional).
-   - `_EHCACHE_PEER_DISCOVERY`: Set to 'automatic' or 'default' for EHCACHE peer discovery.
-   - `_EHCACHE_LISTENER_HOSTNAME`: Your listener hostname (optional).
-   - `_EHCACHE_LISTENER_PORT`: Port number for the listener.
-   - `_EHCACHE_OBJECT_PORT`: Port number for remote objects (optional).
-   - `_EHCACHE_LISTENER_SOCKETTIMEOUTMILLIS`: Listener socket timeout in milliseconds.
-   - `_EHCACHE_MULTICAST_ADDRESS`: Your multicast group address (required for automatic EHCACHE peer discovery).
-   - `_EHCACHE_MULTICAST_PORT`: Dedicated port for multicast heartbeat traffic (required for automatic EHCACHE peer discovery).
-   - `_EHCACHE_MULTICAST_TIMETOLIVE`: Value between 0 and 255 determining packet propagation (required for automatic EHCACHE peer discovery).
-   - `_EHCACHE_MULTICAST_HOSTNAME`: Hostname or IP of the interface for multicast packets (required for automatic EHCACHE peer discovery).
+   - `_JIRA_NODE_ID`: Your custom Jira node
 
 3. Set up Google Cloud Secrets:
    - [Create and manage secrets](https://cloud.google.com/secret-manager/docs/quickstart)
