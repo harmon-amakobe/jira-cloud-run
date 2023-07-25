@@ -38,35 +38,6 @@ In this folder tree:
 - The `LICENSE` file holds the MIT license associated with the project.
 - The `README.md` file provides the project's documentation and instructions for setup.
 
-
-
-Before you start the deployment process, you need to set up the GCP environment with the required services and configurations. Follow these steps to prepare your GCP environment:
-
-1. Enable the necessary Google Cloud services:
-   - Cloud Build
-   - Cloud Run
-   - Cloud SQL
-   - Cloud Storage
-
-2. Create the following environment variables in the Cloud Build console:
-   - `_JIRA_HOME_BUCKET`: Your GCS bucket name for JIRA_HOME.
-   - `_JIRA_NODE_ID`: Your custom Jira node ID (optional).
-   - `_EHCACHE_PEER_DISCOVERY`: Set to 'automatic' or 'default' for EHCACHE peer discovery.
-   - `_EHCACHE_LISTENER_HOSTNAME`: Your listener hostname (optional).
-   - `_EHCACHE_LISTENER_PORT`: Port number for the listener.
-   - `_EHCACHE_OBJECT_PORT`: Port number for remote objects (optional).
-   - `_EHCACHE_LISTENER_SOCKETTIMEOUTMILLIS`: Listener socket timeout in milliseconds.
-   - `_EHCACHE_MULTICAST_ADDRESS`: Your multicast group address (required for automatic EHCACHE peer discovery).
-   - `_EHCACHE_MULTICAST_PORT`: Dedicated port for multicast heartbeat traffic (required for automatic EHCACHE peer discovery).
-   - `_EHCACHE_MULTICAST_TIMETOLIVE`: Value between 0 and 255 determining packet propagation (required for automatic EHCACHE peer discovery).
-   - `_EHCACHE_MULTICAST_HOSTNAME`: Hostname or IP of the interface for multicast packets (required for automatic EHCACHE peer discovery).
-
-3. Set up Google Cloud Secrets:
-   - Create secrets for the database username, password, and JDBC URL using Google Cloud Secret Manager.
-   - Replace `_DB_USERNAME_SECRET`, `_DB_PASSWORD_SECRET`, and `_JDBC_URL_SECRET` in the cloudbuild.yaml file with the appropriate secret paths.
-
-With the GCP environment configured and the correct files in your repository, you are ready to build and deploy Jira Data Center to Cloud Run using Cloud Build.
-
 ## Setting Up the GCP Environment
 
 Before you start the deployment process, you need to set up the GCP environment with the required services and configurations. Follow these steps to prepare your GCP environment:
@@ -95,6 +66,25 @@ Before you start the deployment process, you need to set up the GCP environment 
 3. Set up Google Cloud Secrets:
    - [Create and manage secrets](https://cloud.google.com/secret-manager/docs/quickstart)
 
-   - Replace `_DB_USERNAME_SECRET`, `_DB_PASSWORD_SECRET`, and `_JDBC_URL_SECRET` in the cloudbuild.yaml file with the appropriate secret paths.
+   Create the following secrets:
+
+   - Secret Name: _DB_USERNAME_SECRET
+     Secret Value: [Your Database Username]
+     Description: [Optional description for the secret]
+
+   - Secret Name: _DB_PASSWORD_SECRET
+     Secret Value: [Your Database Password]
+     Description: [Optional description for the secret]
+
+   - Secret Name: _JDBC_URL_SECRET
+     Secret Value: [Your JDBC URL]
+     Description: [Optional description for the secret]
+
+   After creating the secrets, your Secret Manager should look something like this:
+
+   ```plaintext
+   - _DB_USERNAME_SECRET
+   - _DB_PASSWORD_SECRET
+   - _JDBC_URL_SECRET
 
 With the GCP environment configured and the correct files in your repository, you are ready to build and deploy Jira Data Center to Cloud Run using Cloud Build.
