@@ -1,31 +1,26 @@
 steps:
-# Step 1: Build the container image
-- name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'gcr.io/$PROJECT_ID/$TRIGGER_NAME:$COMMIT_SHA', '.']
+  # Step 1: Build the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/$TRIGGER_NAME:$COMMIT_SHA', '.']
 
-# Step 2: Push the container image to Container Registry
-- name: 'gcr.io/cloud-builders/docker'
-  args: ['push', 'gcr.io/$PROJECT_ID/$TRIGGER_NAME:$COMMIT_SHA']
+  # Step 2: Push the Docker image to Google Container Registry (GCR)
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/$TRIGGER_NAME:$COMMIT_SHA']
 
-# Step 3: Deploy the container image to Cloud Run
-- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-  entrypoint: gcloud
-  args:
-  - 'run'
-  - 'deploy'
-  - '$TRIGGER_NAME'
-  - '--image'
-  - 'gcr.io/$PROJECT_ID/$TRIGGER_NAME:$COMMIT_SHA'
-  - '--platform'
-  - 'managed'
-  - '--region'
-  - '$LOCATION'
-  - '--allow-unauthenticated'
-  # Dynamically set the secrets using the latest version
-  - '--set-secrets=_DB_USERNAME_SECRET=$(gcloud secrets versions access latest --secret=_DB_USERNAME_SECRET)',
-  - '--set-secrets=_DB_PASSWORD_SECRET=$(gcloud secrets versions access latest --secret=_DB_PASSWORD_SECRET)',
-  - '--set-secrets=_JDBC_URL_SECRET=$(gcloud secrets versions access latest --secret=_JDBC_URL_SECRET)'
-  # Add other options as needed
+  # Step 3: Deploy the Docker image to Cloud Run
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'  # Use bash as the entrypoint
+    args:
+      - '-c'  # Run the following command in bash
+      - |
+        gcloud run deploy jira-data-center \
+          --image=gcr.io/$PROJECT_ID/$TRIGGER_NAME:$COMMIT_SHA \
+          --platform=managed \
+          --region=$REGION \
+          --allow-unauthenticated \
+          --set-secrets=_DB_USERNAME_SECRET="$(gcloud secrets versions access latest --secret=_DB_USERNAME_SECRET)" \
+          --set-secrets=_DB_PASSWORD_SECRET="$(gcloud secrets versions access latest --secret=_DB_PASSWORD_SECRET)" \
+          --set-secrets=_JDBC_URL_SECRET="$(gcloud secrets versions access latest --secret=_JDBC_URL_SECRET)"
 
 # Cloud Build timeout (optional)
 timeout: '1800s'  # Set to a value that accommodates the build and deployment time.
