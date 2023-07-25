@@ -1,0 +1,39 @@
+steps:
+  # Step 1: Build the Docker image for Jira Data Center
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/jira-data-center', '.']
+
+  # Step 2: Push the Docker image to Google Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/jira-data-center']
+
+images:
+  # Specify the Docker image to be used for Cloud Run deployment
+  - 'gcr.io/$PROJECT_ID/jira-data-center'
+
+# Substitutions
+substitutions:
+  _REGION: us-central1  # Replace with your desired region for Cloud Run deployment
+  _SQL_CONNECTION_NAME: <CLOUD_SQL_INSTANCE_CONNECTION_NAME>  # Replace with your Cloud SQL instance connection name
+  _DB_NAME: <JIRA_DATABASE_NAME>  # Replace with your Jira database name
+  _DB_USER: <DATABASE_USER>  # Replace with your database user
+  _DB_PASS: <DATABASE_PASSWORD>  # Replace with your database password
+  _BUCKET_NAME: <GOOGLE_STORAGE_BUCKET_NAME>  # Replace with your Google Cloud Storage bucket name
+
+# Cloud Run deployment configuration
+deploy:
+  # Deploy to Cloud Run
+  - name: 'jira-data-center'
+    image: 'gcr.io/$PROJECT_ID/jira-data-center'
+    region: '$_REGION'
+    # Set environment variables for Jira Data Center
+    environment:
+      - 'DB_DRIVER=com.mysql.jdbc.Driver'
+      - 'DB_TYPE=mysql'
+      - 'DB_HOST=$_SQL_CONNECTION_NAME'
+      - 'DB_PORT=3306'
+      - 'DB_NAME=$_DB_NAME'
+      - 'DB_USER=$_DB_USER'
+      - 'DB_PASS=$_DB_PASS'
+      - 'JIRA_SHARED_HOME=gs://$_BUCKET_NAME'
+    # Add any other necessary configurations or flags for Cloud Run deployment
