@@ -43,8 +43,8 @@ In this folder tree:
 Before you start the deployment process, you need to set up the GCP environment with the required services and configurations. Follow these steps to prepare your GCP environment:
 
 1. Enable the necessary Google Cloud services:
-   - Enable Cloud Build: [Quickstart Guide](https://cloud.google.com/cloud-build/docs/quickstart)
-   - Enable Cloud Run: [Preparing for Deployment](https://cloud.google.com/run/docs/quickstarts/preparing)
+   - Enable Cloud Build: [Quickstart Guide](https://cloud.google.com/build/docs/build-push-docker-image)
+   - Enable Cloud Run: [Preparing for Deployment](https://cloud.google.com/run/docs/quickstarts/deploy-container)
    - Enable Cloud SQL: [MySQL Quickstart](https://cloud.google.com/sql/docs/mysql/quickstart)
    - Enable Cloud Storage: [Quickstart Guide](https://cloud.google.com/storage/docs/quickstart-console)
 
