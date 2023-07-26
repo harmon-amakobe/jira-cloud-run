@@ -19,6 +19,12 @@ RUN set -e; \
 # Set fallback mount directory (shared home)
 ENV JIRA_SHARED_HOME /mnt/gcs/jira-shared
 
+# Install MySQL JDBC driver from Maven Central
+ENV MYSQL_VERSION 8.0.33
+RUN mkdir -p /opt/atlassian/jira/lib
+RUN curl -L -o /opt/atlassian/jira/lib/mysql-connector-java-$MYSQL_VERSION.jar \
+    https://repo1.maven.org/maven2/mysql/mysql-connector-java/$MYSQL_VERSION/mysql-connector-java-$MYSQL_VERSION.jar
+
 # Copy the jira_entrypoint.sh script from the scripts directory into the container
 COPY scripts/jira_entrypoint.sh /app/jira_entrypoint.sh
 
