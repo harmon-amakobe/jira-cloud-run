@@ -34,11 +34,8 @@ steps:
         --labels=managed-by=gcp-cloud-build-deploy-cloud-run,commit-sha=$COMMIT_SHA,gcb-build-id=$BUILD_ID,gcb-trigger-id=$_TRIGGER_ID
       - '--region=$_DEPLOY_REGION'
       - '--quiet'
-      # Cloud Build substitutions
-      - '--set-env-vars=DB_USERNAME=$_DB_USERNAME'  # Replace with your database username
-      - '--set-env-vars=DB_PASSWORD=$_DB_PASSWORD'  # Replace with your database password
-      - '--set-env-vars=JDBC_URL=$_JDBC_URL'        # Replace with your JDBC URL
-      - '--set-substitutions=_DB_USERNAME=$_DB_USERNAME,_DB_PASSWORD=$_DB_PASSWORD,_JDBC_URL=$_JDBC_URL,_JIRA_HOME_BUCKET=$_JIRA_HOME_BUCKET'
+      # Set environment variables for the Cloud Run service
+      - '--set-env-vars=JIRA_HOME_BUCKET=$_JIRA_HOME_BUCKET'
 
     id: Deploy
     entrypoint: gcloud
