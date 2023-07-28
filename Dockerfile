@@ -31,6 +31,13 @@ COPY scripts/jira_entrypoint.sh /app/jira_entrypoint.sh
 # Ensure the script is executable
 RUN chmod +x /app/jira_entrypoint.sh
 
+# Set environment variables for database configuration
+ENV ATL_JDBC_URL jdbc:mysql://google/<INSTANCE_CONNECTION_NAME>/jira?cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.mysql.SocketFactory
+ENV ATL_JDBC_USER <DB_USER>
+ENV ATL_JDBC_PASSWORD <DB_PASSWORD>
+ENV ATL_DB_DRIVER com.mysql.jdbc.Driver
+ENV ATL_DB_TYPE mysql
+
 # Use tini to manage zombie processes and signal forwarding
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
