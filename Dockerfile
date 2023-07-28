@@ -31,6 +31,9 @@ COPY scripts/jira_entrypoint.sh /app/jira_entrypoint.sh
 # Ensure the script is executable
 RUN chmod +x /app/jira_entrypoint.sh
 
+# Print the value of JIRA_SHARED_HOME for debugging purposes
+RUN echo "JIRA_SHARED_HOME: $JIRA_SHARED_HOME"
+
 # Set environment variables for database configuration
 ENV ATL_JDBC_URL jdbc:mysql://google/anza-maliza:us-central1:jira-test/jira?cloudSqlInstance=anza-maliza:us-central1:jira-test&socketFactory=com.google.cloud.sql.mysql.SocketFactory
 ENV ATL_JDBC_USER jira
