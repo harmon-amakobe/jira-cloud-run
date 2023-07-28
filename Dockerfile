@@ -32,9 +32,9 @@ COPY scripts/jira_entrypoint.sh /app/jira_entrypoint.sh
 RUN chmod +x /app/jira_entrypoint.sh
 
 # Set environment variables for database configuration
-ENV ATL_JDBC_URL jdbc:mysql://google/<INSTANCE_CONNECTION_NAME>/jira?cloudSqlInstance=<INSTANCE_CONNECTION_NAME>&socketFactory=com.google.cloud.sql.mysql.SocketFactory
-ENV ATL_JDBC_USER <DB_USER>
-ENV ATL_JDBC_PASSWORD <DB_PASSWORD>
+ENV ATL_JDBC_URL jdbc:mysql://google/anza-maliza:us-central1:jira-test/jira?cloudSqlInstance=anza-maliza:us-central1:jira-test&socketFactory=com.google.cloud.sql.mysql.SocketFactory
+ENV ATL_JDBC_USER jira
+ENV ATL_JDBC_PASSWORD password
 ENV ATL_DB_DRIVER com.mysql.jdbc.Driver
 ENV ATL_DB_TYPE mysql
 
