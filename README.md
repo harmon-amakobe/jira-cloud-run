@@ -12,9 +12,53 @@ This guide focuses on deploying the infrastructure using **Google Cloud Infrastr
 *   **Image Build Automation:** Includes `cloudbuild.yaml` for building the custom Jira Docker image.
 *   **Secrets Management:** Integrates with Google Secret Manager for sensitive data like license keys and database passwords.
 
+## Sourcing the Terraform Configuration for Infrastructure Manager
+
+When using Google Cloud Infrastructure Manager, you need to provide it with a source for the Terraform configurations. Having a controlled copy of this Terraform code is crucial for stability, customization, and avoiding unexpected impacts from upstream changes. Here are your options:
+
+### Option 1: Forking the Repository (Recommended)
+
+This is the **best practice** for most users. Forking creates a personal copy of this repository under your own Git account (e.g., on GitHub, GitLab). This allows you to manage updates from the original repository at your own pace and make customizations if needed.
+
+*   **Action:** Use the "Fork" button on the repository page of your Git provider (e.g., GitHub).
+*   **Result:** You will then use the URL of *your forked repository* when configuring Infrastructure Manager.
+
+### Option 2: Cloning and Pushing to Your Own Repository
+
+This alternative provides you with a completely new repository under your full control.
+
+*   **Action:**
+    1.  Clone this repository to your local machine:
+        ```bash
+        # Replace <URL_OF_THIS_REPOSITORY> with the actual URL
+        git clone <URL_OF_THIS_REPOSITORY> jira-on-cloudrun-terraform
+        cd jira-on-cloudrun-terraform
+        ```
+    2.  Create a new, empty repository on your preferred Git provider (e.g., GitHub, GitLab). Let's say its URL is `<URL_OF_YOUR_NEW_REPOSITORY>`.
+    3.  Update the remote origin of your local clone and push the code:
+        ```bash
+        git remote set-url origin <URL_OF_YOUR_NEW_REPOSITORY>
+        git push -u origin main # Or your default branch name, e.g., master
+        ```
+*   **Result:** You will then use the URL of *your new repository* when configuring Infrastructure Manager.
+
+### Option 3: Using This Public Repository Directly (Caution Advised)
+
+While technically possible to point Infrastructure Manager directly to this public repository, this approach is **not recommended for production or long-term use.** Future changes to this upstream repository could directly and unexpectedly impact your deployed infrastructure when Infrastructure Manager pulls updates. You also cannot customize the Terraform configuration with this method.
+
+### Repository Accessibility for Google Cloud
+
+Whichever method you choose, ensure the Git repository you use (your fork, your new repository, or this public one) is accessible to Google Cloud.
+*   **Public Repositories:** Generally accessible without special configuration.
+*   **Private Repositories:** You may need to configure access. This can often be done by:
+    *   Connecting your Git provider (e.g., GitHub, GitLab) to your Google Cloud project, often via features in Cloud Build or by setting up specific repository access for the Infrastructure Manager service agent.
+    *   Using Cloud Source Repositories to mirror your private repository, and then pointing Infrastructure Manager to the Cloud Source Repositories URL.
+
+Refer to the Google Cloud Infrastructure Manager documentation for the most up-to-date methods for connecting to your specific Git provider and handling private repository access.
+
 ## Overview of Deployment Phases
 
-The deployment process for this solution, using Google Cloud Infrastructure Manager, involves two main phases:
+The deployment process for this solution involves two main phases:
 
 1.  **Phase 1: Build and Push Jira Docker Image:**
     *   A custom Jira Docker image, compatible with MySQL and designed for this setup, is built using Google Cloud Build.
@@ -202,7 +246,7 @@ This method is beneficial for streamlining deployments, integrating with version
     *   **Region:** Select the region for Infrastructure Manager metadata storage (this is separate from `var.gcp_region` for Jira resources).
 5.  **Configure Source:**
     *   **Source type:** "Git repository".
-    *   **Repository URL:** Enter the HTTPS URL of your Git repository (e.g., `https://github.com/your-username/your-repo-name.git`).
+    *   **Repository URL:** Provide the HTTPS URL of **your forked or cloned Git repository** (as described in the "Sourcing the Terraform Configuration for Infrastructure Manager" section). For example: `https://github.com/your-username/your-forked-repo-name.git`.
     *   **Target reference type:** "Branch".
     *   **Target reference:** Your branch name (e.g., `main`).
     *   **Terraform configuration directory:** Leave blank if `.tf` files are at the repository root.
