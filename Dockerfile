@@ -1,48 +1,44 @@
-# Use the official Atlassian Jira Software Docker image as the base image
-FROM atlassian/jira-software
+# 1. Start from atlassian/jira-software:8.20.0
+FROM atlassian/jira-software:8.20.0
 
-# Install system dependencies
-RUN set -e; \
-    apt-get update -y && apt-get install -y \
-    tini \
-    lsb-release \
-    gnupg; \
-    gcsFuseRepo=gcsfuse-`lsb_release -c -s`; \
-    echo "deb http://packages.cloud.google.com/apt $gcsFuseRepo main" | \
-    tee /etc/apt/sources.list.d/gcsfuse.list; \
-    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
-    apt-key add -; \
-    apt-get update; \
-    apt-get install -y gcsfuse \
-    && apt-get clean
+# 2. Switch to the root user for package installation
+USER root
 
-# Set fallback mount directory (shared home)
-ENV JIRA_SHARED_HOME /mnt/gcs/jira-shared
+# 3. Install gnupg, wget, apt-transport-https, ca-certificates
+RUN apt-get update && \
+    apt-get install -y gnupg wget apt-transport-https ca-certificates
 
-# Install MySQL JDBC driver from Maven Central
-ENV MYSQL_VERSION 8.0.30
-RUN mkdir -p /opt/atlassian/jira/lib
-RUN curl -L -o /opt/atlassian/jira/lib/mysql-connector-java-$MYSQL_VERSION.jar \
-    https://repo1.maven.org/maven2/mysql/mysql-connector-java/$MYSQL_VERSION/mysql-connector-java-$MYSQL_VERSION.jar
+# 4. Import the Google Cloud public key
+RUN wget -q -O - https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 
-# Copy the jira_entrypoint.sh script from the scripts directory into the container
-COPY scripts/jira_entrypoint.sh /app/jira_entrypoint.sh
+# 5. Add the Google Cloud SDK package repository
+RUN echo "deb https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
 
-# Ensure the script is executable
-RUN chmod +x /app/jira_entrypoint.sh
+# 6. Update the package list
+RUN apt-get update
 
-# Print the value of JIRA_SHARED_HOME for debugging purposes
-RUN echo "JIRA_SHARED_HOME: $JIRA_SHARED_HOME"
+# 7. Install google-cloud-sdk and default-mysql-client
+RUN apt-get install -y google-cloud-sdk default-mysql-client
 
-# Set environment variables for database configuration
-ENV ATL_JDBC_URL jdbc:mysql://google/anza-maliza:us-central1:jira-test/jira?cloudSqlInstance=anza-maliza:us-central1:jira-test&socketFactory=com.google.cloud.sql.mysql.SocketFactory
-ENV ATL_JDBC_USER jira
-ENV ATL_JDBC_PASSWORD password
-ENV ATL_DB_DRIVER com.mysql.jdbc.Driver
-ENV ATL_DB_TYPE mysql
+# 8. Create a directory /opt/atlassian/startup_scripts/
+RUN mkdir -p /opt/atlassian/startup_scripts/
 
-# Use tini to manage zombie processes and signal forwarding
-ENTRYPOINT ["/usr/bin/tini", "--"]
+# 9. Copy any custom scripts
+COPY startup_scripts/ /opt/atlassian/startup_scripts/
 
-# Pass the startup script as arguments to Tini
-CMD ["/app/jira_entrypoint.sh"]
+# 10. Set /opt/atlassian/startup_scripts/ as the working directory
+WORKDIR /opt/atlassian/startup_scripts/
+
+# 11. Ensure the jira user has appropriate ownership or permissions
+# No specific chown needed here for /opt/atlassian/startup_scripts/ as scripts
+# will be run by root or jira user depending on the entrypoint logic.
+# The base image already defines the jira user and its home directory permissions.
+
+# Clean up apt caches
+RUN rm -rf /var/lib/apt/lists/*
+
+# 12. Switch back to the jira user
+USER jira
+
+# 13. Define the entrypoint
+ENTRYPOINT ["/opt/atlassian/startup_scripts/custom_entrypoint.sh"]

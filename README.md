@@ -1,81 +1,94 @@
-# Deploy Jira on GCP Using Cloud Run
+# Jira on Cloud Run with Cloud SQL (MySQL) and GCS Attachments
 
-This guide will walk you through the process of deploying Jira Data Center on Google Cloud Platform (GCP) using Cloud Run. This setup utilizes Google Cloud services such as Cloud Run, Cloud Build, Google Cloud Storage, and Cloud SQL. We'll be using the official Atlassian Jira Software Docker image available at [Docker Hub](https://hub.docker.com/r/atlassian/jira-software).
+## 1. Overview
 
-## Quick Procedure Summary
+This project provides a solution for deploying Atlassian Jira Software (Data Center or Server, non-clustered) on Google Cloud Run, leveraging Cloud SQL for MySQL as its database and Google Cloud Storage (GCS) for managing Jira attachments. This setup aims to provide a scalable, manageable, and cost-effective way to run Jira in the Google Cloud ecosystem.
 
-Follow these steps to deploy Jira Data Center on GCP:
+Key features:
+*   **Jira on Cloud Run:** Run Jira in a serverless, containerized environment.
+*   **Cloud SQL for Database:** Utilize a managed MySQL instance for robust database performance and reliability.
+*   **GCS for Attachments:** Offload Jira attachments to Google Cloud Storage for scalability and durability.
+*   **Customizable Entrypoint:** A custom script handles pre-startup configuration like `dbconfig.xml` generation and GCS attachment synchronization.
 
-1. Set up necessary environment variables and secrets.
-2. Pull the Jira Data Center Docker image from Docker Hub.
-3. Mount a folder in a bucket as a volume using Google Cloud Storage FUSE.
-4. Connect to your Cloud SQL instance.
-5. Build a modified image using Cloud Build.
-6. Deploy the modified image to Cloud Run.
-7. Test the deployment on Cloud Run.
+## 2. Architecture Summary
 
-## Repository Contents
+The architecture consists of three main Google Cloud components:
 
-```repository
-.
-├── configurations/
-│   ├── server.xml
-│   └── other_config_files...
-├── scripts/
-│   └── jira_entrypoint.sh
-├── cloudbuild.yaml
-├── Dockerfile
-├── LICENSE
-└── README.md
-```
+*   **Google Cloud Run:** Hosts the Jira application, packaged as a Docker container. Cloud Run manages the serving infrastructure, scaling (though limited to a single instance for this Jira setup), and request handling.
+*   **Google Cloud SQL (MySQL):** Provides a fully managed relational database service. Jira's application data (issues, workflows, users, etc.) is stored here. The Cloud Run service connects to Cloud SQL via the Cloud SQL Auth Proxy, which is automatically configured when using the `--add-cloudsql-instances` flag during deployment.
+*   **Google Cloud Storage (GCS):** Used to store all file attachments uploaded to Jira issues. The custom entrypoint script synchronizes these attachments between the Jira instance and the GCS bucket at startup.
 
-In this folder tree:
+This separation of concerns allows for independent scaling and management of the application, database, and file storage.
 
-- The `Dockerfile` defines the Docker image for your Jira Data Center application. Place it at the root of your repository.
-- The `cloudbuild.yaml` file is used to define the build steps for Google Cloud Build. Place it at the root of your repository.
-- The `scripts` directory stores any custom scripts or helper files needed during the build or deployment process. For example, you may need to set up the initial configuration for Jira Data Center or retrieve credentials from Google Cloud Secret Manager.
-- The `configurations` directory holds various configuration files needed by your Jira Data Center instances. For example, you might have a `server.xml` file to customize the Tomcat server settings or any other Jira-specific configuration files.
-- The `LICENSE` file holds the MIT license associated with the project.
-- The `README.md` file provides the project's documentation and instructions for setup.
+## 3. Prerequisites
 
-## Setting Up the GCP Environment
+Before you begin, ensure you have the following:
 
-Before you start the deployment process, you need to set up the GCP environment with the required services and configurations. Follow these steps to prepare your GCP environment:
+*   **Google Cloud Project:** An active GCP project with billing enabled.
+*   **`gcloud` CLI:** The [Google Cloud SDK](https://cloud.google.com/sdk/docs/install) installed and configured (run `gcloud auth login` and `gcloud config set project YOUR_PROJECT_ID`).
+*   **Docker:** Docker installed and running on your local machine for building the container image.
+*   **Jira Software License:** A valid license key for Jira Software (Data Center or Server).
+*   **Basic understanding of Docker and Google Cloud Platform.**
 
-1. Enable the necessary Google Cloud services:
-   - Enable Cloud Build: [Quickstart Guide](https://cloud.google.com/build/docs/build-push-docker-image)
-   - Enable Cloud Run: [Preparing for Deployment](https://cloud.google.com/run/docs/quickstarts/deploy-container)
-   - Enable Cloud SQL: [MySQL Quickstart](https://cloud.google.com/sql/docs/mysql/quickstart)
-   - Enable Cloud Storage: [Quickstart Guide](https://cloud.google.com/storage/docs/quickstart-console)
+## 4. Setup Steps
 
-2. Create the following substitution variables in the Cloud Build console:
-   - [Set up and manage substition variables](https://cloud.google.com/build/docs/configuring-builds/substitute-variable-values)
+Follow these steps in order to deploy Jira:
 
-   - `_JIRA_HOME_BUCKET`: Your GCS bucket name for JIRA_HOME.
-   - `_JIRA_NODE_ID`: Your custom Jira node
+1.  **Set up MySQL on Cloud SQL:**
+    *   Instructions: [`CLOUD_SQL_SETUP.md`](./CLOUD_SQL_SETUP.md)
+    *   This will guide you through creating a managed MySQL instance for your Jira database.
 
-3. Set up Google Cloud Secrets:
-   - [Create and manage secrets](https://cloud.google.com/secret-manager/docs/quickstart)
+2.  **Set up Google Cloud Storage (GCS) for Attachments:**
+    *   Instructions: [`GCS_BUCKET_SETUP.md`](./GCS_BUCKET_SETUP.md)
+    *   This will help you create a GCS bucket to store Jira attachments and configure permissions.
 
-   Create the following secrets:
+3.  **Build and Deploy Jira to Cloud Run:**
+    *   Instructions: [`CLOUD_RUN_DEPLOYMENT.md`](./CLOUD_RUN_DEPLOYMENT.md)
+    *   This document covers building the custom Jira Docker image, pushing it to a container registry (GCR or Artifact Registry), and deploying it to Cloud Run with the necessary configurations.
 
-   - Secret Name: _DB_USERNAME_SECRET
-     Secret Value: [Your Database Username]
-     Description: [Optional description for the secret]
+## 5. Key Files
 
-   - Secret Name: _DB_PASSWORD_SECRET
-     Secret Value: [Your Database Password]
-     Description: [Optional description for the secret]
+*   **`Dockerfile`**:
+    *   Defines the Docker image for running Jira. It starts from the official `atlassian/jira-software` base image, installs necessary tools (`google-cloud-sdk` for GCS interaction, `default-mysql-client` for potential database operations), copies the custom `startup_scripts/` directory into the image, and sets the `ENTRYPOINT` to the `custom_entrypoint.sh` script.
+*   **`startup_scripts/custom_entrypoint.sh`**:
+    *   This shell script runs when the Docker container starts, before the main Jira application. Its primary responsibilities include:
+        *   Validating that all required environment variables are set.
+        *   Generating the `dbconfig.xml` file (if database variables are provided) within the `JIRA_HOME` directory, which Jira uses to connect to its database.
+        *   Synchronizing Jira attachments from the configured GCS bucket to the local `JIRA_HOME/data/attachments` directory using `gsutil rsync`.
+        *   Removing any existing Jira lock file.
+        *   Finally, executing the original Jira entrypoint script (`/entrypoint.sh`) to start the Jira application.
 
-   - Secret Name: _JDBC_URL_SECRET
-     Secret Value: [Your JDBC URL]
-     Description: [Optional description for the secret]
+## 6. Core Environment Variables
 
-   After creating the secrets, your Secret Manager should look something like this:
+When deploying to Cloud Run, these are the most critical environment variables you'll need to set. Refer to `CLOUD_RUN_DEPLOYMENT.md` for a complete list and detailed explanations, including how to use Secret Manager for sensitive values.
 
-   ```plaintext
-   - _DB_USERNAME_SECRET
-   - _DB_PASSWORD_SECRET
-   - _JDBC_URL_SECRET
+*   `DB_HOST`: Database host (usually `127.0.0.1` when using the Cloud SQL Proxy via `--add-cloudsql-instances`).
+*   `DB_PORT`: Database port (usually `3306` for MySQL).
+*   `DB_NAME`: Name of the Jira database in Cloud SQL (e.g., `jiradb`).
+*   `DB_USER`: Username for the Jira database user (e.g., `jiradbuser`).
+*   `DB_PASSWORD`: Password for the Jira database user (strongly recommended to manage via Google Cloud Secret Manager).
+*   `GCS_BUCKET_NAME`: The globally unique name of your GCS bucket for attachments.
+*   `YOUR_CLOUD_SQL_INSTANCE_CONNECTION_NAME` (used in `gcloud run deploy` command): The connection name of your Cloud SQL instance (e.g., `YOUR_PROJECT_ID:YOUR_REGION:YOUR_SQL_INSTANCE_ID`).
+*   `JIRA_LICENSE_KEY`: Your Jira Software license key.
 
-With the GCP environment configured and the correct files in your repository, you are ready to build and deploy Jira Data Center to Cloud Run using Cloud Build.
+## 7. Using Jira
+
+Once deployed, you can access your Jira instance via the URL provided by Cloud Run at the end of the deployment process.
+*   If it's a new installation, you will be guided through the Jira setup wizard. Choose "I'll set it up myself." The database configuration should be automatically picked up from the `dbconfig.xml` created by the entrypoint script.
+*   Provide your Jira license key when prompted.
+*   Complete the remaining setup steps (administrator account, etc.).
+*   Subsequent access will take you directly to your Jira dashboard.
+
+## 8. Limitations & Considerations
+
+*   **Single-Node Jira Only:** This solution is designed for a single Jira instance. Cloud Run's `--max-instances` should be set to `1`. This setup does **not** support Jira Data Center clustering features out-of-the-box. Running multiple instances that share a common `JIRA_HOME` (especially with the default ephemeral filesystem for parts of `JIRA_HOME`) can lead to data corruption.
+*   **`JIRA_HOME` Performance & Persistence:**
+    *   **Attachments:** Persisted in Google Cloud Storage, which is scalable and durable.
+    *   **Other `JIRA_HOME` Data (Indexes, Caches, Plugins, Logos, etc.):** By default, these reside on the Cloud Run instance's ephemeral filesystem. This means this data can be lost if the instance restarts, potentially leading to longer startup times as caches are rebuilt or plugins are reinstalled (if not baked into the image or re-downloaded).
+    *   **For Production:** For production environments requiring high uptime and performance for all `JIRA_HOME` components (not just attachments), consider advanced solutions like mounting a Google Cloud Filestore (NFS) instance to Cloud Run for the entire `JIRA_HOME` directory. This is a more complex setup and is not covered in the basic deployment guide but is a key consideration for production workloads.
+*   **Jira Backup Strategy:**
+    *   **Database:** Cloud SQL for MySQL provides automated daily backups and point-in-time recovery (PITR). These are crucial and should be configured according to your RPO/RTO needs.
+    *   **Attachments:** Google Cloud Storage offers features like object versioning, which can act as a backup for your attachments. You can also configure bucket replication to another region for disaster recovery.
+    *   **Jira Native XML Backups:** For a complete application-level backup (configuration, users, projects, but excluding attachments if stored externally as configured here), Jira's built-in XML backup utility can still be used. This would typically involve `exec`-ing into the running container or setting up a scheduled job within the container (more complex) to generate the backup and then copy it to GCS. This strategy is complementary to database and attachment backups and useful for migrations or major version upgrades.
+
+This setup provides a good balance of serverless convenience and robust managed services for running Jira on Google Cloud. Always tailor configurations and operational strategies to your specific organizational needs and risk tolerance.
