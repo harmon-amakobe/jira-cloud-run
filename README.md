@@ -1,8 +1,8 @@
 # Jira on Google Cloud Run with Terraform and Filestore
 
-This project provides Terraform configurations to deploy Atlassian Jira Software on Google Cloud Run. It leverages Cloud SQL for MySQL as the database and Google Cloud Filestore for persistent `JIRA_HOME` storage, ensuring full data durability.
+This project provides Terraform configurations to deploy Atlassian Jira Software on Google Cloud Run, using Cloud SQL for MySQL and Google Cloud Filestore for persistent `JIRA_HOME` storage.
 
-This guide focuses on deploying the infrastructure using **Google Cloud Infrastructure Manager**, which is the recommended method for a managed, GitOps-driven deployment that uses Terraform (this project's IaC tool) to provision and manage your resources.
+This guide focuses on deploying the infrastructure using **Google Cloud Infrastructure Manager**, the recommended method for a managed, GitOps-driven deployment. Infrastructure Manager uses this project's Terraform code to provision and manage your Google Cloud resources.
 
 ## Key Features
 *   **Persistent `JIRA_HOME`:** Utilizes Google Cloud Filestore for the entire `JIRA_HOME` directory, including attachments, plugins, and indexes.
@@ -14,60 +14,56 @@ This guide focuses on deploying the infrastructure using **Google Cloud Infrastr
 
 ## Sourcing the Terraform Configuration for Infrastructure Manager
 
-When using Google Cloud Infrastructure Manager, you need to provide it with a source for the Terraform configurations. Having a controlled copy of this Terraform code is crucial for stability, customization, and avoiding unexpected impacts from upstream changes. Here are your options:
+When using Google Cloud Infrastructure Manager, you must provide it with a source for the Terraform configurations. Using your own controlled copy of this Terraform code (rather than directly using this public repository) is crucial for stability, customization, and avoiding unexpected impacts from upstream changes. Here are your options:
 
 ### Option 1: Forking the Repository (Recommended)
 
-This is the **best practice** for most users. Forking creates a personal copy of this repository under your own Git account (e.g., on GitHub, GitLab). This allows you to manage updates from the original repository at your own pace and make customizations if needed.
+This is the **best practice**. Forking creates a personal copy of this repository under your Git account (e.g., GitHub, GitLab). This allows you to manage updates from the original repository at your own pace and make customizations if needed.
 
-*   **Action:** Use the "Fork" button on the repository page of your Git provider (e.g., GitHub).
-*   **Result:** You will then use the URL of *your forked repository* when configuring Infrastructure Manager.
+*   **Action:** Use the "Fork" button on this repository's page on your Git provider.
+*   **Result:** You will use the URL of *your forked repository* when configuring Infrastructure Manager.
 
 ### Option 2: Cloning and Pushing to Your Own Repository
 
-This alternative provides you with a completely new repository under your full control.
+This gives you a completely new repository under your full control.
 
 *   **Action:**
-    1.  Clone this repository to your local machine:
+    1.  Clone this repository locally:
         ```bash
-        # Replace <URL_OF_THIS_REPOSITORY> with the actual URL
+        # Replace <URL_OF_THIS_REPOSITORY> with the actual URL of this project's repository
         git clone <URL_OF_THIS_REPOSITORY> jira-on-cloudrun-terraform
         cd jira-on-cloudrun-terraform
         ```
-    2.  Create a new, empty repository on your preferred Git provider (e.g., GitHub, GitLab). Let's say its URL is `<URL_OF_YOUR_NEW_REPOSITORY>`.
-    3.  Update the remote origin of your local clone and push the code:
+    2.  Create a new, empty repository on your preferred Git provider.
+    3.  Update the remote origin of your local clone and push the code to your new repository:
         ```bash
-        git remote set-url origin <URL_OF_YOUR_NEW_REPOSITORY>
-        git push -u origin main # Or your default branch name, e.g., master
+        git remote set-url origin <URL_OF_YOUR_NEW_REPOSITORY> 
+        git push -u origin main # Or your default branch name
         ```
-*   **Result:** You will then use the URL of *your new repository* when configuring Infrastructure Manager.
+*   **Result:** You will use the URL of *your new repository* when configuring Infrastructure Manager.
 
-### Option 3: Using This Public Repository Directly (Caution Advised)
+### Option 3: Using This Public Repository Directly (Not Recommended)
 
-While technically possible to point Infrastructure Manager directly to this public repository, this approach is **not recommended for production or long-term use.** Future changes to this upstream repository could directly and unexpectedly impact your deployed infrastructure when Infrastructure Manager pulls updates. You also cannot customize the Terraform configuration with this method.
+Pointing Infrastructure Manager directly to this public repository is **not recommended for production or long-term use.** Upstream changes could unexpectedly impact your deployment, and you cannot customize the configuration.
 
 ### Repository Accessibility for Google Cloud
 
-Whichever method you choose, ensure the Git repository you use (your fork, your new repository, or this public one) is accessible to Google Cloud.
+Ensure the Git repository you use (your fork or new repository) is accessible to Google Cloud.
 *   **Public Repositories:** Generally accessible without special configuration.
-*   **Private Repositories:** You may need to configure access. This can often be done by:
-    *   Connecting your Git provider (e.g., GitHub, GitLab) to your Google Cloud project, often via features in Cloud Build or by setting up specific repository access for the Infrastructure Manager service agent.
-    *   Using Cloud Source Repositories to mirror your private repository, and then pointing Infrastructure Manager to the Cloud Source Repositories URL.
-
-Refer to the Google Cloud Infrastructure Manager documentation for the most up-to-date methods for connecting to your specific Git provider and handling private repository access.
+*   **Private Repositories:** You may need to configure access, often by connecting your Git provider to your Google Cloud project (e.g., via Cloud Build connections) or using Cloud Source Repositories. Refer to Google Cloud documentation for details.
 
 ## Overview of Deployment Phases
 
-The deployment process for this solution involves two main phases:
+The deployment process involves two main phases:
 
 1.  **Phase 1: Build and Push Jira Docker Image:**
-    *   A custom Jira Docker image, compatible with MySQL and designed for this setup, is built using Google Cloud Build.
-    *   The image is then pushed to Google Artifact Registry.
-    *   The key output of this phase is the **Jira Image URL**, which is a required input for the Infrastructure Manager deployment in Phase 2.
+    *   The custom Jira Docker image (MySQL-compatible) is built using Google Cloud Build.
+    *   This image is then pushed to Google Artifact Registry.
+    *   **Output:** The **Jira Image URL**, required for the Infrastructure Manager deployment.
 2.  **Phase 2: Provision and Deploy Infrastructure via Infrastructure Manager:**
-    *   Google Cloud Infrastructure Manager uses the provided Terraform configurations to automatically set up all necessary Google Cloud resources:
-        *   Cloud SQL for MySQL instance (database and user).
-        *   Google Cloud Filestore instance (for `JIRA_HOME`).
+    *   Infrastructure Manager uses this project's Terraform configurations to set up all necessary Google Cloud resources:
+        *   Cloud SQL for MySQL instance.
+        *   Google Cloud Filestore instance for `JIRA_HOME`.
         *   Google Secret Manager secrets (for Jira license and DB password).
         *   A GCS bucket (primarily for Terraform state or potential backups).
         *   Cloud Run service to host Jira, configured with Filestore.
@@ -76,60 +72,44 @@ The deployment process for this solution involves two main phases:
 
 ## Prerequisites
 
-This section outlines what you need to prepare *before* using Google Cloud Infrastructure Manager to deploy the Jira solution.
+This section outlines what you need to prepare *before* using Google Cloud Infrastructure Manager to deploy the Jira solution. Most `gcloud` commands can be run directly in **Google Cloud Shell**.
 
 *   **Google Cloud Project:**
     *   An active Google Cloud Project with **billing enabled**. You will need the Project ID.
-    *   Access this project via the Google Cloud Console.
+    *   Access to this project via the Google Cloud Console.
 
-*   **Google Cloud SDK (`gcloud` CLI):**
-    *   **Installed and Authenticated:** The `gcloud` CLI must be installed on your local machine and authenticated with user credentials. This is essential for performing preliminary setup tasks that are not handled by Infrastructure Manager itself (e.g., initial API enablement, Artifact Registry creation, Cloud Build submission).
-    *   **Key `gcloud` commands you will run:**
-        *   `gcloud auth login`
-        *   `gcloud config set project YOUR_PROJECT_ID`
-        *   `gcloud services enable ...` (for enabling APIs)
-        *   `gcloud artifacts repositories create ...` (for creating the Artifact Registry repo)
-        *   `gcloud builds submit ...` (for building the Jira image)
-        *   (Potentially) `gcloud iam service-accounts create ...` (for creating the Infrastructure Manager deployment SA if not done via Console)
+*   **Google Cloud SDK (`gcloud` via Cloud Shell):**
+    *   Certain setup steps require `gcloud` commands. These are best run in **Google Cloud Shell**, accessible from the Google Cloud Console. Cloud Shell provides a pre-authenticated `gcloud` environment.
+    *   Ensure your Cloud Shell is configured for your target project: `gcloud config set project YOUR_PROJECT_ID`.
+    *   You will use `gcloud` for tasks like enabling APIs, creating an Artifact Registry repository (if not using the Console), submitting the Cloud Build job, and potentially creating service accounts.
 
 *   **Artifact Registry Repository:**
-    *   A Docker repository **must** be created in your Google Cloud project and chosen region *before* starting Phase 1 (Docker image build). This repository will store the custom Jira Docker image.
-    *   **To create an Artifact Registry repository (example):**
+    *   A Docker repository **must** be created in your Google Cloud project and chosen region *before* Phase 1.
+    *   Create this via the **Google Cloud Console** (Navigate to "Artifact Registry" > "Create Repository", select "Docker" format) or **Cloud Shell**:
       ```bash
       gcloud artifacts repositories create YOUR_ARTIFACT_REGISTRY_REPO_NAME \
         --repository-format=docker \
         --location=YOUR_GCP_REGION \
         --description="Jira Docker image repository" \
-        --project=YOUR_PROJECT_ID
+        --project=YOUR_PROJECT_ID 
       ```
-      Replace placeholders with your actual values.
+      (Replace placeholders like `YOUR_ARTIFACT_REGISTRY_REPO_NAME`).
 
 *   **Jira Software License Key & Database Password:**
-    *   These are sensitive values you will provide as input variables during the Infrastructure Manager deployment setup. The Terraform configuration will then store them securely in Google Secret Manager.
-
-*   **Terraform CLI (Informational Only):**
-    *   The Terraform CLI (Version 1.0 or later) is **not required** for deployment when using Infrastructure Manager, as Infrastructure Manager executes Terraform on your behalf. However, having it installed locally can be useful for those who wish to understand the Terraform code, perform local validation (`terraform validate`), or contribute to the IaC development.
-
-*   **Docker (Informational Only):**
-    *   Docker is **not required** on your local machine for deployment, as the provided setup uses Google Cloud Build for remote image building. It's only needed if you intend to build the Docker image locally for development or testing purposes.
-
-*   **`jq` (Informational Only):**
-    *   A command-line JSON processor. It is **not required** for deploying via Infrastructure Manager. It's mentioned as an optional tool for advanced users who might want to script interactions with GCP services or parse complex JSON outputs from `gcloud` commands or API responses outside of the Infrastructure Manager flow.
+    *   Have these sensitive values ready. You'll provide them as input variables during the Infrastructure Manager deployment, and Terraform will store them securely in Google Secret Manager.
 
 *   **IAM Permissions (User performing setup):**
-    *   The Google Cloud user account you are authenticated as (via `gcloud auth login`) for running the initial `gcloud` commands (API enablement, Artifact Registry creation, Cloud Build submission) and for setting up the Infrastructure Manager deployment needs sufficient permissions on the project.
-    *   For initial setup, roles like `roles/owner` or `roles/editor` are generally sufficient.
-    *   For more granular control, ensure your user account has permissions to:
-        *   Enable Google Cloud APIs (requires `roles/serviceusage.serviceUsageAdmin`).
-        *   Create and manage Artifact Registry repositories (e.g., `roles/artifactregistry.admin`).
-        *   Submit Cloud Build jobs (e.g., `roles/cloudbuild.builds.editor`).
-        *   Create and manage IAM service accounts and grant them permissions (e.g., `roles/iam.serviceAccountAdmin`, `roles/resourcemanager.projectIamAdmin`).
-        *   Configure and manage Google Cloud Infrastructure Manager deployments (e.g., `roles/config.admin`).
+    *   Your Google Cloud user account (used in Cloud Shell/Console) needs permissions for the initial setup tasks (API enablement, Artifact Registry, Cloud Build, Infrastructure Manager setup).
+    *   Roles like `roles/owner` or `roles/editor` on the project are sufficient for initial setup. For more granular permissions, ensure your user can:
+        *   Enable Google Cloud APIs (`roles/serviceusage.serviceUsageAdmin`).
+        *   Manage Artifact Registry repositories (`roles/artifactregistry.admin`).
+        *   Submit Cloud Build jobs (`roles/cloudbuild.builds.editor`).
+        *   Manage IAM service accounts and permissions (`roles/iam.serviceAccountAdmin`, `roles/resourcemanager.projectIamAdmin`).
+        *   Manage Infrastructure Manager deployments (`roles/config.admin`).
 
 *   **Required APIs (to be enabled in your GCP Project):**
-    *   The following Google Cloud APIs must be enabled in your project **before** initiating the Infrastructure Manager deployment (some are also needed for Phase 1). You can enable them using the `gcloud services enable ...` command provided below (this requires the user running the command to have `roles/serviceusage.serviceUsageAdmin` permissions).
-    *   While the Terraform configuration includes `enable_apis = true` by default (which attempts to enable APIs via the Infrastructure Manager's deployment service account), it's best practice to pre-enable them, especially `config.googleapis.com` (Infrastructure Manager API) and `cloudbuild.googleapis.com`.
-    *   **Command to enable all required APIs:**
+    *   The following APIs must be enabled. Use the Google Cloud Console ("APIs & Services" > "Library") or the `gcloud` command in Cloud Shell. It's best practice to pre-enable these, especially `config.googleapis.com` and `cloudbuild.googleapis.com`, even if Terraform (`enable_apis = true`) attempts it.
+    *   **Command to enable all required APIs (run in Cloud Shell):**
       ```bash
       gcloud services enable \
           cloudresourcemanager.googleapis.com \
@@ -164,9 +144,21 @@ This section outlines what you need to prepare *before* using Google Cloud Infra
 
 This phase uses Google Cloud Build to create the custom Jira Docker image. The image is then pushed to your Artifact Registry repository. **Completing this phase and obtaining the full Jira Image URL is a critical prerequisite before proceeding to Phase 2 (Infrastructure Deployment).**
 
-1.  **Ensure your Artifact Registry repository is created** in your Google Cloud project and chosen region.
-2.  **Navigate to the repository root directory** (where `cloudbuild.yaml` and `Dockerfile` are located).
-3.  **Submit the build to Google Cloud Build:**
+There are two primary ways to initiate this build:
+
+**Method 1: Using `gcloud` command in Google Cloud Shell (Recommended for simplicity)**
+
+1.  **Ensure your Artifact Registry repository is created** (see Prerequisites).
+2.  **Access your Source Code in Cloud Shell:**
+    *   Open **Google Cloud Shell**.
+    *   If you have forked or cloned this repository (as recommended in "Sourcing the Terraform Configuration"), clone your repository into the Cloud Shell environment:
+        ```bash
+        git clone https://github.com/YOUR_USERNAME/YOUR_FORKED_REPO_NAME.git
+        cd YOUR_FORKED_REPO_NAME 
+        ```
+        (Replace with your actual repository URL and directory name).
+    *   Ensure the `cloudbuild.yaml`, `Dockerfile`, and the `startup_scripts/` directory are present in your current directory.
+3.  **Submit the build to Google Cloud Build from Cloud Shell:**
     Execute the following command, replacing the placeholders with your specific values:
     ```bash
     gcloud builds submit --config cloudbuild.yaml --substitutions=\
@@ -182,7 +174,31 @@ _IMAGE_TAG=latest
     `your-gcp-region-docker.pkg.dev/your-gcp-project-id/your-artifact-registry-repo-name/your-jira-image-name:latest`.
     This full URL is the `jira_image_url` required for the Infrastructure Manager deployment in Phase 2.
 
-    Once this phase is complete and you have the Jira Image URL, you are ready for Phase 2.
+**Method 2: Using the Google Cloud Console with Cloud Build Triggers**
+
+This method is useful if you prefer a UI-driven approach and want to set up automated builds (though not strictly necessary for a one-time deployment).
+
+1.  **Ensure your Artifact Registry repository is created** (see Prerequisites).
+2.  **Connect your Git Repository to Cloud Build:**
+    *   In the Google Cloud Console, navigate to "Cloud Build" > "Triggers".
+    *   Click "Connect repository" and follow the prompts to connect to your Git provider (e.g., GitHub) and select your forked/cloned repository.
+3.  **Create a Build Trigger (or Run Manually):**
+    *   Once the repository is connected, you can create a trigger that automatically starts a build on code pushes to a specific branch.
+    *   Alternatively, for a manual build:
+        *   Go to "Cloud Build" > "History".
+        *   Click "Run Build".
+        *   Select your connected repository and branch/commit.
+        *   **Configuration:** Choose "Cloud Build configuration file (yaml or json)".
+        *   **Location:** Specify `/cloudbuild.yaml` (or the path to your build config if it's in a subdirectory).
+        *   **Substitution Variables:** Add the following variables and their values:
+            *   `_GCP_REGION`: Your GCP region (e.g., `us-central1`).
+            *   `_ARTIFACT_REGISTRY_REPO`: Your Artifact Registry repository name.
+            *   `_IMAGE_NAME`: Your desired image name (e.g., `jira-filestore-app`).
+            *   `_IMAGE_TAG`: `latest` (or your preferred tag).
+        *   Click "Run build".
+4.  **Note the Jira Image URL:** After the build completes successfully, find the image URL in the build logs or by navigating to Artifact Registry and locating your image.
+
+Whichever method you choose, once this phase is complete and you have the Jira Image URL, you are ready for Phase 2.
 
 ### Phase 2: Deploy Infrastructure with Google Cloud Infrastructure Manager
 
@@ -201,83 +217,66 @@ This method is beneficial for streamlining deployments, integrating with version
 *   **Git Repository:** Your Terraform project (this repository) must be hosted in a Git repository (e.g., GitHub, Cloud Source Repositories) that Google Cloud can access. If using a private repository, you may need to configure access credentials.
 *   **IAM Permissions for Infrastructure Manager Service Agent:** The Infrastructure Manager service agent (a Google-managed service account) needs permission to impersonate the *deployment service account* (see below). This is typically granted automatically when you enable the Infrastructure Manager API or during the first deployment if the user has sufficient project-level permissions. The required role is `roles/iam.serviceAccountTokenCreator` on the *deployment service account*.
 *   **Deployment Service Account (User-Managed):** Create a user-managed service account that Infrastructure Manager will use to execute Terraform. This account needs sufficient IAM roles to manage all resources in your Terraform configuration.
-    *   **Recommended Granular Roles (assign to the Deployment SA):**
-        *   `roles/cloudsql.admin` (Cloud SQL Admin)
-        *   `roles/storage.admin` (Storage Admin - for GCS bucket)
-        *   `roles/run.admin` (Cloud Run Admin)
-        *   `roles/file.editor` (Filestore Editor)
-        *   `roles/secretmanager.admin` (Secret Manager Admin)
-        *   `roles/iam.serviceAccountAdmin` (Service Account Admin - to create Cloud Run SA)
-        *   `roles/resourcemanager.projectIamAdmin` (Project IAM Admin - to grant permissions to Cloud Run SA)
-        *   `roles/servicenetworking.serviceAgent` (Service Networking Connections Admin - for VPC peering)
-        *   `roles/serviceusage.serviceUsageAdmin` (Service Usage Admin - to enable APIs if `enable_apis = true`)
-    *   **Alternative (Broader Permissions):** `roles/editor` (Project Editor) on the project. Use with caution.
-*   **Infrastructure Manager API Enabled:** The `config.googleapis.com` API (and others listed in general prerequisites) must be enabled in your project.
+    *   **Recommended Granular Roles (assign to the Deployment SA):** `roles/cloudsql.admin`, `roles/storage.admin`, `roles/run.admin`, `roles/file.editor`, `roles/secretmanager.admin`, `roles/iam.serviceAccountAdmin`, `roles/resourcemanager.projectIamAdmin`, `roles/servicenetworking.serviceAgent`, `roles/serviceusage.serviceUsageAdmin`.
+    *   **Alternative (Broader Permissions):** `roles/editor` on the project (use with caution).
+*   **Infrastructure Manager API Enabled:** The `config.googleapis.com` API must be enabled (see "Required APIs" in general Prerequisites).
 
 ##### Deployment Steps with Infrastructure Manager
 
-1.  **Ensure APIs are Enabled:** Verify that all APIs listed in the main "Prerequisites" section (including `config.googleapis.com`) are enabled in your project.
-    ```bash
-    gcloud services enable config.googleapis.com \
-        cloudresourcemanager.googleapis.com \
-        compute.googleapis.com \
-        sqladmin.googleapis.com \
-        secretmanager.googleapis.com \
-        iam.googleapis.com \
-        artifactregistry.googleapis.com \
-        run.googleapis.com \
-        servicenetworking.googleapis.com \
-        file.googleapis.com \
-        cloudbuild.googleapis.com \
-        --project=YOUR_PROJECT_ID
-    ```
+1.  **Ensure all general "Prerequisites" are met**, especially API enablement and Artifact Registry repository creation. The Jira Docker image from Phase 1 must be available.
 2.  **Create and Configure Deployment Service Account:**
-    If not already done, create a user-managed service account. Grant it the recommended IAM roles listed above.
+    This service account is used by Infrastructure Manager to deploy resources. It can be created and its IAM roles granted through the **Google Cloud Console** (IAM & Admin > Service Accounts, then IAM page) or via **Cloud Shell**:
     ```bash
-    gcloud iam service-accounts create YOUR_DEPLOYMENT_SA_NAME --display-name="Infra Manager Jira Deployment SA" --project=YOUR_PROJECT_ID
-    # Grant roles, e.g.:
-    # gcloud projects add-iam-policy-binding YOUR_PROJECT_ID --member="serviceAccount:YOUR_DEPLOYMENT_SA_NAME@YOUR_PROJECT_ID.iam.gserviceaccount.com" --role="roles/cloudsql.admin"
-    # (Repeat for all recommended roles)
+    # Create the Service Account (replace YOUR_DEPLOYMENT_SA_NAME)
+    gcloud iam service-accounts create YOUR_DEPLOYMENT_SA_NAME \
+      --display-name="Infrastructure Manager Jira Deployment SA" \
+      --project=YOUR_PROJECT_ID
+
+    # Grant necessary roles (repeat for all roles listed in "Prerequisites for Infrastructure Manager")
+    # Example for one role:
+    gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+      --member="serviceAccount:YOUR_DEPLOYMENT_SA_NAME@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+      --role="roles/cloudsql.admin" 
     ```
-3.  **Navigate to Infrastructure Manager:** In the Google Cloud Console, search for "Infrastructure Manager".
+3.  **Navigate to Infrastructure Manager:** In the Google Cloud Console, search for "Infrastructure Manager" and go to the service.
 4.  **Create a New Deployment:**
     *   Click "Deployments", then "Create".
-    *   **Deployment Name:** Enter a name (e.g., `jira-prod-deployment`).
-    *   **Region:** Select the region for Infrastructure Manager metadata storage (this is separate from `var.gcp_region` for Jira resources).
+    *   **Deployment Name:** Enter a descriptive name (e.g., `jira-prod-deployment`).
+    *   **Region:** Select the region for Infrastructure Manager metadata storage (this is separate from `var.gcp_region` where Jira resources will be deployed).
 5.  **Configure Source:**
     *   **Source type:** "Git repository".
-    *   **Repository URL:** Provide the HTTPS URL of **your forked or cloned Git repository** (as described in the "Sourcing the Terraform Configuration for Infrastructure Manager" section). For example: `https://github.com/your-username/your-forked-repo-name.git`.
+    *   **Repository URL:** Provide the HTTPS URL of **your forked or cloned Git repository**. Example: `https://github.com/YOUR_USERNAME/YOUR_FORKED_REPO_NAME.git`.
     *   **Target reference type:** "Branch".
     *   **Target reference:** Your branch name (e.g., `main`).
     *   **Terraform configuration directory:** Leave blank if `.tf` files are at the repository root.
-6.  **Configure Inputs (Variables):**
+6.  **Configure Inputs (Terraform Variables):**
     *   Infrastructure Manager auto-detects variables from `variables.tf`.
-    *   **Required Variables:** Provide values for variables without defaults:
-        *   `gcp_project_id`
-        *   `jira_license_key` (handle this sensitive input carefully as per Infrastructure Manager's recommendations for secrets, though Terraform itself places it in Secret Manager)
-        *   `db_password` (handle similarly)
-        *   `jira_image_url` (from Phase 1)
+    *   **Provide Required Variables:**
+        *   `gcp_project_id`: Your Google Cloud Project ID.
+        *   `jira_license_key`: Your Jira Software license key. (Handle this sensitive input as per Infrastructure Manager's recommendations for secrets).
+        *   `db_password`: The password for the Jira database user. (Handle similarly).
+        *   `jira_image_url`: The full Jira Image URL from Phase 1.
     *   **Review Defaults:** Verify other variables like `gcp_region`.
     *   **Customize Optional Variables:** Adjust others (e.g., `filestore_instance_name`) if needed.
-7.  **Select Service Account:**
-    *   Choose the user-managed service account created in Step 2 (e.g., `YOUR_DEPLOYMENT_SA_NAME@YOUR_PROJECT_ID.iam.gserviceaccount.com`). Infrastructure Manager uses this to run Terraform.
+7.  **Select Deployment Service Account:**
+    *   Choose the user-managed service account you created and configured in Step 2. Infrastructure Manager will use this account to execute Terraform.
 8.  **Review and Deploy:**
-    *   Review all settings. Click "Create". Infrastructure Manager fetches the Terraform code, runs `terraform apply`, and manages the deployment.
-    *   Monitor progress, logs, and outputs in the Infrastructure Manager console.
+    *   Carefully review all settings. Click "Create".
+    *   Infrastructure Manager fetches the Terraform code, runs `terraform apply`, and manages the deployment. Monitor progress, logs, and outputs in the Infrastructure Manager console.
 
 ##### Managing Existing Deployments
 *   **View Details:** Access deployment status, revision history, outputs, and logs in the console.
-*   **Trigger Updates:** Push changes to your Git repository (if linked to a branch) or manually edit the deployment to apply updates.
-*   **Destroying the Deployment:** Use the "Delete" or "Destroy" option in the Infrastructure Manager console for the specific deployment.
+*   **Update Deployments:** Push changes to your Git repository (if linked to a branch) or manually edit the deployment in the console to apply updates.
+*   **Destroy Deployments:** Use the "Delete" or "Destroy" option in the Infrastructure Manager console for the specific deployment.
 
 ## Accessing Jira
 
-Once the Google Cloud Infrastructure Manager deployment completes successfully (which internally runs `terraform apply`), check the **Outputs** tab of your deployment in the Infrastructure Manager console. You will find the `cloud_run_service_url`. Access this URL in your browser to begin the Jira setup process.
+Once the Google Cloud Infrastructure Manager deployment completes successfully, check the **Outputs** tab of your deployment in the Infrastructure Manager console. You will find the `cloud_run_service_url`. Access this URL in your browser to begin the Jira setup process.
 Due to `JIRA_HOME` being on Filestore, the Cloud Run service is configured with `max_instances = 1` to ensure data integrity for standard Jira Software.
 
 ## Terraform Outputs
 
-The following outputs will be displayed after a successful deployment:
+The following outputs will be displayed in the Infrastructure Manager console after a successful deployment:
 *   `cloud_run_service_url`: The URL of your Jira instance.
 *   `actual_gcs_bucket_name`: The name of the GCS bucket created (e.g., for Terraform state, backups).
 *   `cloud_sql_instance_connection_name`: The connection name of your Cloud SQL instance.
