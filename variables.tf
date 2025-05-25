@@ -67,3 +67,41 @@ variable "enable_apis" {
   description = "Enable necessary Google Cloud APIs (Compute, SQL Admin, Secret Manager, IAM, Artifact Registry, Cloud Run, Cloud Build, Service Networking)."
   default     = true
 }
+
+variable "filestore_instance_name" {
+  type        = string
+  description = "Name for the Google Cloud Filestore instance for JIRA_HOME."
+  default     = "jira-filestore-home"
+}
+
+variable "filestore_tier" {
+  type        = string
+  description = "Performance tier for the Filestore instance (e.g., BASIC_SSD, BASIC_HDD, ENTERPRISE)."
+  default     = "BASIC_SSD"
+  validation {
+    condition     = contains(["BASIC_SSD", "BASIC_HDD", "ENTERPRISE", "HIGH_SCALE_SSD"], var.filestore_tier)
+    error_message = "Valid values for filestore_tier are BASIC_SSD, BASIC_HDD, ENTERPRISE, or HIGH_SCALE_SSD."
+  }
+}
+
+variable "filestore_capacity_gb" {
+  type        = number
+  description = "Capacity of the Filestore instance in GB (e.g., 1024 for 1TB)."
+  default     = 1024
+  validation {
+    condition     = var.filestore_capacity_gb >= 1024
+    error_message = "Minimum Filestore capacity is 1024 GB."
+  }
+}
+
+variable "filestore_share_name" {
+  type        = string
+  description = "Name of the NFS share exported by the Filestore instance."
+  default     = "jira_home" # This is the typical share name Filestore uses.
+}
+
+variable "filestore_network_name" {
+  type        = string
+  description = "The VPC network name to which the Filestore instance will be connected."
+  default     = "default"
+}

@@ -66,8 +66,12 @@ resource "google_cloud_run_v2_service" "jira_service" {
         }
       }
       env {
-        name = "JIRA_HOME" // Optional: if your entrypoint script assumes it, good to be explicit
-        value = "/var/atlassian/application-data/jira"
+        name  = "JIRA_HOME"
+        value = "/mnt/jira_home"
+      }
+      volume_mounts {
+        name       = "jira-home-filestore" // Must match the volume name above
+        mount_path = "/mnt/jira_home"      // The path inside the container
       }
        # Optional: Add JIRA_MAX_PERM_SIZE if needed by your Jira version/plugins
       # env {
@@ -85,11 +89,19 @@ resource "google_cloud_run_v2_service" "jira_service" {
       instances = [google_sql_database_instance.jira_mysql_instance.connection_name]
     }
     
-    # Adjust scaling as needed
-    # scaling {
-    #   min_instance_count = 0
-    #   max_instance_count = 1 // For non-Data Center Jira, typically 1 active instance
-    # }
+    volumes {
+      name = "jira-home-filestore" // A logical name for the volume
+      nfs {
+        server    = google_filestore_instance.jira_home_filestore.networks[0].ip_addresses[0]
+        path      = "/${var.filestore_share_name}" // Path on the NFS server (e.g., /jira_home)
+        read_only = false
+      }
+    }
+
+    scaling {
+      min_instance_count = 0 // Can be 0 for scale-to-zero, or 1 for always-on (once started)
+      max_instance_count = 1
+    }
     
     // Set a longer startup timeout as Jira can be slow to start
     // This is not directly available in google_cloud_run_v2_service container spec
@@ -113,6 +125,7 @@ resource "google_cloud_run_v2_service" "jira_service" {
     google_sql_database_instance.jira_mysql_instance,
     google_secret_manager_secret_version.jira_license_secret_version,
     google_secret_manager_secret_version.db_password_secret_version,
-    google_service_account.cloud_run_sa
+    google_service_account.cloud_run_sa,
+    google_filestore_instance.jira_home_filestore
   ]
 }

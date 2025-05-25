@@ -35,7 +35,8 @@ resource "google_project_service" "project_apis" {
     "artifactregistry.googleapis.com",    # For Artifact Registry (where image is stored)
     "run.googleapis.com",                 # For Cloud Run
     "cloudbuild.googleapis.com",          # If Cloud Build is used for image, or by user
-    "servicenetworking.googleapis.com"    # For private services access (Cloud SQL private IP)
+    "servicenetworking.googleapis.com",   # For private services access (Cloud SQL private IP)
+    "file.googleapis.com"                 # For Filestore
   ]) : []
 
   project                    = var.gcp_project_id

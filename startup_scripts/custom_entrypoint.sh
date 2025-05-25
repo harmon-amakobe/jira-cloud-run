@@ -4,7 +4,8 @@ set -e
 echo "Custom entrypoint script is running."
 
 # Check for required environment variables
-REQUIRED_VARS=("DB_HOST" "DB_NAME" "DB_USER" "DB_PASSWORD" "GCS_BUCKET_NAME")
+# REQUIRED_VARS=("DB_HOST" "DB_NAME" "DB_USER" "DB_PASSWORD" "GCS_BUCKET_NAME") # GCS_BUCKET_NAME removed
+REQUIRED_VARS=("DB_HOST" "DB_NAME" "DB_USER" "DB_PASSWORD")
 for VAR_NAME in "${REQUIRED_VARS[@]}"; do
   if [ -z "${!VAR_NAME}" ]; then
     echo "Error: Environment variable ${VAR_NAME} is not set." >&2
@@ -12,7 +13,7 @@ for VAR_NAME in "${REQUIRED_VARS[@]}"; do
   fi
 done
 
-JIRA_HOME="/var/atlassian/application-data/jira"
+JIRA_HOME="/var/atlassian/application-data/jira" # This will be /mnt/jira_home on Cloud Run due to Filestore mount
 DB_PORT_EFFECTIVE="${DB_PORT:-3306}"
 
 # Create dbconfig.xml if database variables are set
@@ -54,24 +55,34 @@ else
   echo "Skipping dbconfig.xml creation as not all database variables are set."
 fi
 
-JIRA_ATTACHMENTS_DIR="$JIRA_HOME/data/attachments"
-mkdir -p "$JIRA_ATTACHMENTS_DIR"
+# GCS Synchronization logic removed as JIRA_HOME is now on Filestore
+# JIRA_ATTACHMENTS_DIR="$JIRA_HOME/data/attachments"
+# mkdir -p "$JIRA_ATTACHMENTS_DIR" # This directory will be part of JIRA_HOME on Filestore
 
-if [ -n "$GCS_BUCKET_NAME" ]; then
-  echo "Synchronizing attachments from GCS bucket: gs://${GCS_BUCKET_NAME}/attachments to ${JIRA_ATTACHMENTS_DIR}..."
-  # Ensure gsutil is available and configured if needed (gcloud auth might be required if not using workload identity)
-  if command -v gsutil &> /dev/null; then
-    gsutil -m rsync -r "gs://${GCS_BUCKET_NAME}/attachments" "$JIRA_ATTACHMENTS_DIR"
-    echo "Attachment synchronization complete."
-    echo "Setting ownership of attachments directory to jira user..."
-    chown -R 2001:2001 "$JIRA_ATTACHMENTS_DIR"
-    echo "Attachment directory ownership set."
-  else
-    echo "Warning: gsutil command not found. Skipping GCS attachment synchronization." >&2
-  fi
-else
-    echo "GCS_BUCKET_NAME not set. Skipping attachment synchronization."
-fi
+# if [ -n "$GCS_BUCKET_NAME" ]; then
+#   echo "Synchronizing attachments from GCS bucket: gs://${GCS_BUCKET_NAME}/attachments to ${JIRA_ATTACHMENTS_DIR}..."
+#   # Ensure gsutil is available and configured if needed (gcloud auth might be required if not using workload identity)
+#   if command -v gsutil &> /dev/null; then
+#     gsutil -m rsync -r "gs://${GCS_BUCKET_NAME}/attachments" "$JIRA_ATTACHMENTS_DIR"
+#     echo "Attachment synchronization complete."
+#     echo "Setting ownership of attachments directory to jira user..."
+#     chown -R 2001:2001 "$JIRA_ATTACHMENTS_DIR"
+#     echo "Attachment directory ownership set."
+#   else
+#     echo "Warning: gsutil command not found. Skipping GCS attachment synchronization." >&2
+#   fi
+# else
+#     echo "GCS_BUCKET_NAME not set. Skipping attachment synchronization."
+# fi
+
+# Ensure JIRA_HOME (mounted Filestore) has correct permissions if necessary.
+# The base Jira image entrypoint might handle this, or it might need to be done here.
+# For now, assuming base image or mount options handle general ownership.
+# If specific ownership is needed for JIRA_HOME as a whole (e.g. after mount):
+# echo "Ensuring JIRA_HOME ownership..."
+# chown -R 2001:2001 "$JIRA_HOME"
+# echo "JIRA_HOME ownership set."
+
 
 # Remove Jira lock file
 if [ -f "$JIRA_HOME/.jira-home.lock" ]; then
