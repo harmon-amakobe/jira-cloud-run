@@ -1,59 +1,32 @@
+# Cloud Build configuration to build and push the Jira Docker image to Artifact Registry
+
 steps:
-  # Step 1: Build the Docker image
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - build
-      - '--no-cache'
-      - '-t'
-      - >-
-        $_AR_HOSTNAME/$PROJECT_ID/cloud-run-source-deploy/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
-      - .
-      - '-f'
-      - Dockerfile
-    id: Build
+- name: 'gcr.io/cloud-builders/docker'
+  args: [
+    'build',
+    '-t',
+    '${_GCP_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/${_IMAGE_NAME}:${_IMAGE_TAG}',
+    '.'  # Assumes Dockerfile and startup_scripts/ are in the current directory
+  ]
+  id: 'Build Jira Docker Image'
 
-  # Step 2: Push the Docker image to Google Container Registry (GCR)
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - push
-      - >-
-        $_AR_HOSTNAME/$PROJECT_ID/cloud-run-source-deploy/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
-    id: Push
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', '${_GCP_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/${_IMAGE_NAME}:${_IMAGE_TAG}']
+  id: 'Push Jira Image to Artifact Registry'
 
-  # Step 3: Deploy the Docker image to Cloud Run
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
-    args:
-      - run
-      - services
-      - update
-      - $_SERVICE_NAME
-      - '--platform=managed'
-      - >-
-        --image=$_AR_HOSTNAME/$PROJECT_ID/cloud-run-source-deploy/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
-      - >-
-        --labels=managed-by=gcp-cloud-build-deploy-cloud-run,commit-sha=$COMMIT_SHA,gcb-build-id=$BUILD_ID,gcb-trigger-id=$_TRIGGER_ID
-      - '--region=$_DEPLOY_REGION'
-      - '--quiet'
-      # Set environment variables for the Cloud Run service
-      - '--set-env-vars=JIRA_HOME_BUCKET=$_JIRA_HOME_BUCKET'
-
-    id: Deploy
-    entrypoint: gcloud
-
-# Define the Dockerfile for building the image
+# List of images built by this build
 images:
-  - >-
-    $_AR_HOSTNAME/$PROJECT_ID/cloud-run-source-deploy/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
-options:
-  substitutionOption: ALLOW_LOOSE
+- '${_GCP_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/${_IMAGE_NAME}:${_IMAGE_TAG}'
+
+# Default substitution variables. These can be overridden at build trigger time.
 substitutions:
-  _AR_HOSTNAME: us-central1-docker.pkg.dev
-  _PLATFORM: managed
-  _TRIGGER_ID: 5424b461-8603-43a6-8f7d-4005e269a8b9
-  _SERVICE_NAME: jira-cloud-run
-  _DEPLOY_REGION: us-central1
-  _JIRA_HOME_BUCKET: your-jira-home-bucket
-tags:
-  - gcp-cloud-build-deploy-cloud-run
-  - gcp-cloud-build-deploy-cloud-run-managed
-  - jira-cloud-run
+  _GCP_REGION: 'us-central1'               # Example: us-central1, europe-west1
+  _ARTIFACT_REGISTRY_REPO: 'jira-repo'     # Your Artifact Registry repository name
+  _IMAGE_NAME: 'jira-cloudrun-mysql'       # The name of the image
+  _IMAGE_TAG: 'latest'                     # The tag for the image
+
+# Optional: Configure build logging behavior
+options:
+  logging: CLOUD_LOGGING_ONLY
+  # machineType: 'N1_HIGHCPU_8' # Optional: specify a larger machine type if needed for build
+```
